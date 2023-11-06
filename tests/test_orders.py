@@ -21,9 +21,9 @@ def test_create_order():
         create_manager(client, first_name="First test", last_name="Last test", email="first.last@test.nure.ua",
                        password="123456789")
 
-        prod1 = create_product(client, model="test1", manufacturer="m", price=100, category_id=cat["category_id"])
-        prod2 = create_product(client, model="test2", manufacturer="m", price=150, category_id=cat["category_id"])
-        prod3 = create_product(client, model="test3", manufacturer="m", price=200, category_id=cat["category_id"])
+        prod1 = create_product(client, model="test1", manufacturer="m", price=100, category_id=cat["id"])
+        prod2 = create_product(client, model="test2", manufacturer="m", price=150, category_id=cat["id"])
+        prod3 = create_product(client, model="test3", manufacturer="m", price=200, category_id=cat["id"])
 
         cust = {"first_name": "test", "last_name": "test", "email": "test.test@test.nure.ua", "phone_number": 123}
         prods = [{"id": prod1["product_id"], "quantity": 1},

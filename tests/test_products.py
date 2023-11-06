@@ -19,15 +19,15 @@ def test_create_products():
     with TestClient(app) as client:
         cat = create_category(client, name="test")
 
-        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["category_id"])
+        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
         assert prod["model"] == "test"
         assert prod["manufacturer"] == "m"
         assert prod["price"] == 100
-        assert prod["category_id"] == cat["category_id"]
+        assert prod["category_id"] == cat["id"]
         assert prod["quantity"] == 0
         assert prod["warranty_days"] == 14
 
-        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["category_id"],
+        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"],
                               quantity=5, warranty_days=7)
         assert prod["quantity"] == 5
         assert prod["warranty_days"] == 7
@@ -42,21 +42,21 @@ def test_get_products():
         assert resp.status_code == 200
         assert resp.json() == []
 
-        resp = client.get(f"/api/v0/categories/{cat['category_id']}/products")
+        resp = client.get(f"/api/v0/categories/{cat['id']}/products")
         assert resp.status_code == 200
         assert resp.json() == []
 
-        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["category_id"])
+        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200
         assert resp.json() == [prod]
 
-        resp = client.get(f"/api/v0/categories/{cat['category_id']}/products")
+        resp = client.get(f"/api/v0/categories/{cat['id']}/products")
         assert resp.status_code == 200
         assert resp.json() == [prod]
 
-        resp = client.get(f"/api/v0/categories/{cat2['category_id']}/products")
+        resp = client.get(f"/api/v0/categories/{cat2['id']}/products")
         assert resp.status_code == 200
         assert resp.json() == []
 
@@ -65,7 +65,7 @@ def test_get_product():
     with TestClient(app) as client:
         cat = create_category(client, name="test")
 
-        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["category_id"])
+        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
         resp = client.get(f"/api/v0/products/{prod['product_id']}")
         assert resp.status_code == 200
@@ -76,7 +76,7 @@ def test_update_product():
     with TestClient(app) as client:
         cat = create_category(client, name="test")
 
-        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["category_id"])
+        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
         resp = client.patch(f"/api/v0/products/{prod['product_id']}",
                             json={"image_url": "https://example.com/img.png"})
@@ -95,7 +95,7 @@ def test_delete_category():
         assert resp.status_code == 200
         assert resp.json() == []
 
-        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["category_id"])
+        prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200

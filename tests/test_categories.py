@@ -30,36 +30,36 @@ def test_get_categories():
     with TestClient(app) as client:
         resp = client.get("/api/v0/categories")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json() == {'count': 0, 'results': []}
 
         cat1 = create_category(client, name="test")
 
         resp = client.get("/api/v0/categories")
         assert resp.status_code == 200
-        assert len(resp.json()) == 1
-        assert resp.json()[0] == cat1
+        assert resp.json()["count"] == 1
+        assert resp.json()["results"][0] == cat1
 
         cat2 = create_category(client, name="test", description="test category")
 
         resp = client.get("/api/v0/categories")
         assert resp.status_code == 200
-        assert len(resp.json()) == 2
-        assert resp.json() == [cat1, cat2] or resp.json() == [cat2, cat1]
+        assert resp.json()["count"] == 2
+        assert resp.json()["results"] == [cat1, cat2] or resp.json() == [cat2, cat1]
 
         resp = client.get("/api/v0/categories?limit=1")
         assert resp.status_code == 200
-        assert len(resp.json()) == 1
+        assert len(resp.json()["results"]) == 1
 
         resp = client.get("/api/v0/categories?limit=1&page=2")
         assert resp.status_code == 200
-        assert len(resp.json()) == 0
+        assert len(resp.json()["results"]) == 0
 
 
 def test_get_category():
     with TestClient(app) as client:
         cat1 = create_category(client, name="test")
 
-        resp = client.get(f"/api/v0/categories/{cat1['category_id']}")
+        resp = client.get(f"/api/v0/categories/{cat1['id']}")
         assert resp.status_code == 200
         assert resp.json() == cat1
 
@@ -68,7 +68,7 @@ def test_update_category():
     with TestClient(app) as client:
         cat1 = create_category(client, name="test")
 
-        resp = client.patch(f"/api/v0/categories/{cat1['category_id']}", json={"description": "123"})
+        resp = client.patch(f"/api/v0/categories/{cat1['id']}", json={"description": "123"})
         assert resp.status_code == 200
         assert resp.json() == cat1 | {"description": "123"}
 
@@ -77,17 +77,17 @@ def test_delete_category():
     with TestClient(app) as client:
         resp = client.get("/api/v0/categories")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["results"] == []
 
         cat1 = create_category(client, name="test")
 
         resp = client.get("/api/v0/categories")
         assert resp.status_code == 200
-        assert resp.json() == [cat1]
+        assert resp.json()["results"] == [cat1]
 
-        resp = client.delete(f"/api/v0/categories/{cat1['category_id']}")
+        resp = client.delete(f"/api/v0/categories/{cat1['id']}")
         assert resp.status_code == 204
 
         resp = client.get("/api/v0/categories")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["results"] == []
