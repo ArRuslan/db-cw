@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.db import database
-from app.routes import categories, products, orders, managers, customers
+from app.routes import categories, products, orders, managers, customers, auth
 
 app = FastAPI()
 
@@ -31,3 +31,4 @@ app.include_router(categories.router)
 app.include_router(orders.router)
 app.include_router(managers.router)
 app.include_router(customers.router)
+app.include_router(auth.router)

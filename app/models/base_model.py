@@ -43,7 +43,7 @@ class Model(BaseModel, ABC):
 
     @classmethod
     async def from_query(cls, query: str, values: dict, *, many: bool=True) -> Union[list[Model], Model]:
-        result = await database.fetch_all(query, values)
+        result = await (database.fetch_all(query, values) if many else database.fetch_one(query, values))
         if many:
             return [cls(**row) for row in result]
         return cls(**result)
