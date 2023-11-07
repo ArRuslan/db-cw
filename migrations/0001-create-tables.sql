@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS customers (
     first_name VARCHAR(256) NOT NULL,
     last_name VARCHAR(256) NOT NULL,
     email TEXT NOT NULL,
-    phone_numer INTEGER NOT NULL
+    phone_number INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS managers (

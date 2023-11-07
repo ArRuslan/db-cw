@@ -11,7 +11,7 @@ class ProductCreateModel(BaseModel):
     per_order_limit: Optional[int] = None
     image_url: Optional[str] = None
     warranty_days: int = 14
-    category_id: Optional[int] = None
+    category_id: int
 
 
 class ProductUpdateModel(BaseModel):

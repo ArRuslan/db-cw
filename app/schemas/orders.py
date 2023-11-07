@@ -1,11 +1,8 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
-
-class CostumerInfoModel(BaseModel):
-    first_name: str
-    last_name: str
-    email: str
-    phone_number: int
+from app.schemas.customers import CustomerModel
 
 
 class ProductModel(BaseModel):
@@ -14,7 +11,13 @@ class ProductModel(BaseModel):
 
 
 class OrderCreateModel(BaseModel):
-    customer_info: CostumerInfoModel
+    customer_info: CustomerModel
     products: list[ProductModel]
     address: str
     type: str
+
+
+class OrderUpdateModel(BaseModel):
+    status: Optional[str] = None
+    address: Optional[str] = None
+    type: Optional[str] = None
