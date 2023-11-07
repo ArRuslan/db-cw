@@ -40,7 +40,7 @@ def test_get_products():
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["results"] == []
 
         resp = client.get(f"/api/v0/categories/{cat['id']}/products")
         assert resp.status_code == 200
@@ -50,7 +50,7 @@ def test_get_products():
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200
-        assert resp.json() == [prod]
+        assert resp.json()["results"] == [prod]
 
         resp = client.get(f"/api/v0/categories/{cat['id']}/products")
         assert resp.status_code == 200
@@ -67,7 +67,7 @@ def test_get_product():
 
         prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
-        resp = client.get(f"/api/v0/products/{prod['product_id']}")
+        resp = client.get(f"/api/v0/products/{prod['id']}")
         assert resp.status_code == 200
         assert resp.json() == prod
 
@@ -78,11 +78,11 @@ def test_update_product():
 
         prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
-        resp = client.patch(f"/api/v0/products/{prod['product_id']}",
+        resp = client.patch(f"/api/v0/products/{prod['id']}",
                             json={"image_url": "https://example.com/img.png"})
         assert resp.status_code == 200
 
-        resp = client.get(f"/api/v0/products/{prod['product_id']}")
+        resp = client.get(f"/api/v0/products/{prod['id']}")
         assert resp.status_code == 200
         assert resp.json() == prod | {"image_url": "https://example.com/img.png"}
 
@@ -93,17 +93,17 @@ def test_delete_category():
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["results"] == []
 
         prod = create_product(client, model="test", manufacturer="m", price=100, category_id=cat["id"])
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200
-        assert resp.json() == [prod]
+        assert resp.json()["results"] == [prod]
 
-        resp = client.delete(f"/api/v0/products/{prod['product_id']}")
+        resp = client.delete(f"/api/v0/products/{prod['id']}")
         assert resp.status_code == 204
 
         resp = client.get("/api/v0/products")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["results"] == []

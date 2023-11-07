@@ -26,10 +26,10 @@ def test_create_order():
         prod3 = create_product(client, model="test3", manufacturer="m", price=200, category_id=cat["id"])
 
         cust = {"first_name": "test", "last_name": "test", "email": "test.test@test.nure.ua", "phone_number": 123}
-        prods = [{"id": prod1["product_id"], "quantity": 1},
-                 {"id": prod2["product_id"], "quantity": 2},
-                 {"id": prod3["product_id"], "quantity": 3},
-                 {"id": prod3["product_id"]*2, "quantity": 4}]
+        prods = [{"id": prod1["id"], "quantity": 1},
+                 {"id": prod2["id"], "quantity": 2},
+                 {"id": prod3["id"], "quantity": 3},
+                 {"id": prod3["id"]*2, "quantity": 4}]
         ord1 = create_order(client, customer_info=cust, address="test", type="test", products=prods)
         ord2 = create_order(client, customer_info=cust, address="test", type="test", products=prods)
         ord3 = create_order(client, customer_info=cust | {"phone_number": 456}, address="test", type="test",
