@@ -17,6 +17,7 @@ class Product(Model):
     image_url: Optional[str] = fields.TextField(null=True)
     warranty_days: int = fields.IntField(default=0)
     category: models.Category | None = fields.ForeignKeyField("models.Category", null=True, default=None)
+    characteristics = fields.ManyToManyField("models.Characteristic", through="productcharacteristic")
 
     class PydanticMeta:
         exclude = ["category"]

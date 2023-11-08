@@ -1,12 +1,10 @@
-from typing import Annotated
-
 from bcrypt import checkpw
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from app.models.manager import Manager
 from app.models.session import Session
 from app.schemas.auth import LoginData
-from app.utils import authSession
+from app.utils import AuthSessionDep
 
 router = APIRouter(prefix="/api/v0/auth")
 
@@ -23,5 +21,5 @@ async def login(data: LoginData):
 
 
 @router.post("/logout", status_code=204)
-async def logout(session: Annotated[Session, Depends(authSession)]):
+async def logout(session: AuthSessionDep):
     await Session.filter(id=session.id).delete()

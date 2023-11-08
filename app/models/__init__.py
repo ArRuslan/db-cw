@@ -5,3 +5,5 @@ from .manager import Manager
 from .session import Session
 from .order import Order
 from .order_item import OrderItem
+from .characteristic import Characteristic
+from .product_characteristic import ProductCharacteristic

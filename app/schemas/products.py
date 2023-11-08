@@ -23,3 +23,7 @@ class ProductUpdateModel(BaseModel):
     image_url: Optional[str] = None
     warranty_days: Optional[int] = None
     category_id: Optional[int] = None
+
+
+class PutCharacteristic(BaseModel):
+    value: str | int | float | bool

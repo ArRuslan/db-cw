@@ -1,9 +1,8 @@
-from typing import Union
+from typing import Union, Annotated
 from uuid import UUID
 
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 
-from app.db import database
 from app.models.manager import Manager
 from app.models.session import Session
 
@@ -11,6 +10,16 @@ from app.models.session import Session
 class Permissions:
     ADMIN = 1 << 0
     MANAGE_ORDERS = 1 << 1
+    MANAGE_CATEGORIES = 1 << 2
+    MANAGE_PRODUCTS = 1 << 3
+    MANAGE_CUSTOMERS = 1 << 4
+    EXECUTE_SQL = 1 << 5
+
+    DEFAULT = MANAGE_ORDERS | MANAGE_CATEGORIES | MANAGE_PRODUCTS | MANAGE_CUSTOMERS
+
+    @staticmethod
+    def check(manager: Manager, perm: int) -> bool:
+        return manager.permissions & Permissions.ADMIN == Permissions.ADMIN or manager.permissions & perm == perm
 
 
 async def authManager(request: Request, session_: bool=False) -> Union[Manager, Session]:
@@ -33,3 +42,7 @@ async def authManager(request: Request, session_: bool=False) -> Union[Manager, 
 
 async def authSession(request: Request):
     return await authManager(request, True)
+
+
+AuthManagerDep = Annotated[Manager, Depends(authManager)]
+AuthSessionDep = Annotated[Manager, Depends(authManager)]

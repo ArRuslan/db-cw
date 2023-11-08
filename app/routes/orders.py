@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from tortoise.functions import Count
 
-from app.db import database
 from app.models import Customer, Manager, Product
 from app.models.customer import CustomerPd
 from app.models.order import Order, OrderPd
 from app.models.order_item import OrderItemPd, OrderItem
 from app.models.product import ProductPd
 from app.schemas.orders import OrderCreateModel, OrderUpdateModel
+from app.utils import AuthManagerDep, Permissions
 
 router = APIRouter(prefix="/api/v0/orders")
 
@@ -31,17 +31,21 @@ async def create_order(data: OrderCreateModel):
                                manager=manager)
 
     q = {prod.id: prod.quantity for prod in data.products}
-    print(q)
     for prod in await Product.filter(id__in=[prod.id for prod in data.products]).all():
-        print(prod.id, q[prod.id])
         await OrderItem.create(order=order, product=prod, quantity=q[prod.id], price=prod.price)
 
     return await get_order(order.id)
 
 
 @router.get("/{order_id}")
-async def get_order(order_id: int):
-    order = await Order.get_or_none(id=order_id).select_related("customer")
+async def get_order(order_id: int, manager: AuthManagerDep):
+    q = {"id": order_id}
+    if not Permissions.check(manager, Permissions.MANAGE_ORDERS):
+        q["manager"] = manager
+
+    if (order := await Order.get_or_none(**q).select_related("customer")) is None:
+        raise HTTPException(status_code=404, detail="Unknown order!")
+
     resp = (await OrderPd.from_tortoise_orm(order)).model_dump()
     resp["customer"] = (await CustomerPd.from_tortoise_orm(order.customer)).model_dump()
     resp["items"] = []
@@ -53,7 +57,13 @@ async def get_order(order_id: int):
 
 
 @router.patch("/{order_id}")
-async def update_order(order_id: int, data: OrderUpdateModel):
-    order = await Order.get_or_none(id=order_id)
+async def update_order(order_id: int, data: OrderUpdateModel, manager: AuthManagerDep):
+    q = {"id": order_id}
+    if not Permissions.check(manager, Permissions.MANAGE_ORDERS):
+        q["manager"] = manager
+
+    if (order := await Order.get_or_none(**q)) is None:
+        raise HTTPException(status_code=404, detail="Unknown order!")
+
     await order.update(**data.model_dump(exclude_defaults=True))
     return await get_order(order_id)
