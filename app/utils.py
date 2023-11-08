@@ -13,7 +13,7 @@ class Permissions:
     MANAGE_ORDERS = 1 << 1
 
 
-async def authManager(request: Request, session: bool=False) -> Union[Manager, Session]:
+async def authManager(request: Request, session_: bool=False) -> Union[Manager, Session]:
     if not (auth := request.headers.get("authorization")):
         raise HTTPException(status_code=401, detail="No such session!")
 
@@ -23,14 +23,10 @@ async def authManager(request: Request, session: bool=False) -> Union[Manager, S
         sid = int(sid)
         key = str(UUID(key))
 
-        result = await database.fetch_one("SELECT managers.*, session_id, token FROM sessions JOIN managers "
-                                          "ON sessions.manager_id = managers.manager_id WHERE session_id=:sid AND "
-                                          "managers.manager_id=:uid AND token=:key",
-                                          {"sid": sid, "uid": uid, "key": key})
-        if result is None:
+        if (session := await Session.get_or_none(id=sid, manager__id=uid, token=key).select_related("manager")) is None:
             raise ValueError
 
-        return Session(**result) if session else Manager(**result)
+        return session if session_ else session.manager
     except ValueError:
         raise HTTPException(status_code=401, detail="No such session!")
 

@@ -1,13 +1,13 @@
-from pydantic import Field
+from uuid import uuid4
 
-from app.models.base_model import Model
+from tortoise import fields
+
+from app import models
+from app.models._utils import Model
 
 
 class Session(Model):
-    id: int = Field(alias="session_id")
-    manager_id: int
-    token: str
-
-    class Meta:
-        table_name = "sessions"
-        sql_pk_name = "session_id"
+    id: int = fields.BigIntField(pk=True)
+    manager: models.Manager = fields.ForeignKeyField("models.Manager")
+    token: str = fields.UUIDField(default=uuid4)
+    

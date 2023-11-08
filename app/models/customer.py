@@ -1,15 +1,15 @@
-from pydantic import Field
+from tortoise import fields
+from tortoise.contrib.pydantic import pydantic_model_creator
 
-from app.models.base_model import Model
+from app.models._utils import Model
 
 
 class Customer(Model):
-    id: int = Field(alias="customer_id")
-    first_name: str
-    last_name: str
-    email: str
-    phone_number: int
+    id: int = fields.BigIntField(pk=True)
+    first_name: str = fields.CharField(max_length=128)
+    last_name: str = fields.CharField(max_length=128)
+    email: str = fields.CharField(max_length=256)
+    phone_number: int = fields.BigIntField()
 
-    class Meta:
-        table_name = "customers"
-        sql_pk_name = "customer_id"
+
+CustomerPd = pydantic_model_creator(Customer, name="CustomerPd")

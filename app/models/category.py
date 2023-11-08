@@ -2,16 +2,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import Field
+from tortoise import fields
 
-from app.models.base_model import Model
+from app.models._utils import Model
 
 
 class Category(Model):
-    id: int = Field(alias="category_id")
-    name: str
-    description: Optional[str]
-
-    class Meta:
-        table_name = "categories"
-        sql_pk_name = "category_id"
+    id: int = fields.BigIntField(pk=True)
+    name: str = fields.CharField(max_length=200)
+    description: Optional[str] = fields.TextField(null=True)

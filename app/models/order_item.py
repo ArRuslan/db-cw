@@ -1,15 +1,19 @@
-from pydantic import Field
+from tortoise import fields
+from tortoise.contrib.pydantic import pydantic_model_creator
 
-from app.models.base_model import Model
+from app import models
+from app.models._utils import Model
 
 
 class OrderItem(Model):
-    id: int = Field(alias="orderitem_id")
-    order_id: int
-    product_id: int
-    quantity: int
-    price: float = Field(alias="price_per_item")
+    id: int = fields.BigIntField(pk=True)
+    order: models.Order = fields.ForeignKeyField("models.Order")
+    product: models.Product = fields.ForeignKeyField("models.Product")
+    quantity: int = fields.IntField()
+    price: float = fields.FloatField()
 
-    class Meta:
-        table_name = "order_items"
-        sql_pk_name = "orderitem_id"
+    class PydanticMeta:
+        exclude = ["order", "product"]
+
+
+OrderItemPd = pydantic_model_creator(OrderItem, name="OrderItemPd")

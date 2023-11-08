@@ -1,16 +1,19 @@
-from pydantic import Field
+from tortoise import fields
+from tortoise.contrib.pydantic import pydantic_model_creator
 
-from app.models.base_model import Model
+from app.models._utils import Model
 
 
 class Manager(Model):
-    id: int = Field(alias="manager_id")
-    first_name: str
-    last_name: str
-    email: str
-    password: str
-    permissions: int
+    id: int = fields.BigIntField(pk=True)
+    first_name: str = fields.CharField(max_length=128)
+    last_name: str = fields.CharField(max_length=128)
+    email: str = fields.CharField(max_length=256)
+    password: str = fields.CharField(max_length=256)
+    permissions: int = fields.IntField(default=2)
 
-    class Meta:
-        table_name = "managers"
-        sql_pk_name = "manager_id"
+    class PydanticMeta:
+        exclude = ["password"]
+
+
+ManagerPd = pydantic_model_creator(Manager, name="ManagerPd")

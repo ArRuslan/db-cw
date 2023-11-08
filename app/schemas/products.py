@@ -8,10 +8,10 @@ class ProductCreateModel(BaseModel):
     manufacturer: str
     price: float
     quantity: int = 0
-    per_order_limit: Optional[int] = None
+    per_order_limit: int = 0
     image_url: Optional[str] = None
     warranty_days: int = 14
-    category_id: int
+    category_id: Optional[int] = None
 
 
 class ProductUpdateModel(BaseModel):
