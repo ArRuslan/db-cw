@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -14,7 +14,7 @@ class OrderCreateModel(BaseModel):
     customer_info: CustomerModel
     products: list[ProductModel]
     address: str
-    type: str
+    type: Literal["shipping", "pickup"]
 
 
 class OrderUpdateModel(BaseModel):

@@ -8,7 +8,7 @@ router = APIRouter(prefix="/api/v0/characteristics")
 
 
 @router.get("/")
-async def get_products(page: int=0, limit: int = 50):
+async def get_characteristics(page: int=0, limit: int = 50):
     return {"results": await Characteristic.all().limit(limit).offset(page * limit),
             "count": await Characteristic.all().count()}
 
