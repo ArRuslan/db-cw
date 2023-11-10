@@ -23,7 +23,7 @@ app.include_router(auth.router)
 
 register_tortoise(
     app,
-    db_url="sqlite://:memory:",  # mysql://nure_db_cw:123456789@127.0.0.1/nure_db_cw
+    db_url="mysql://nure_db_cw:123456789@127.0.0.1/nure_db_cw",  # mysql://nure_db_cw:123456789@127.0.0.1/nure_db_cw
     modules={"models": ["app.models"]},
     generate_schemas=True,
     add_exception_handlers=False,

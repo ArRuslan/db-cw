@@ -7,3 +7,4 @@ from .order import Order
 from .order_item import OrderItem
 from .characteristic import Characteristic
 from .product_characteristic import ProductCharacteristic
+from .return_ import Return

@@ -14,8 +14,9 @@ class Permissions:
     MANAGE_PRODUCTS = 1 << 3
     MANAGE_CUSTOMERS = 1 << 4
     EXECUTE_SQL = 1 << 5
+    READ_STATISTICS = 1 << 6
 
-    DEFAULT = MANAGE_ORDERS | MANAGE_CATEGORIES | MANAGE_PRODUCTS | MANAGE_CUSTOMERS
+    DEFAULT = MANAGE_ORDERS | MANAGE_CATEGORIES | MANAGE_PRODUCTS | MANAGE_CUSTOMERS | READ_STATISTICS
 
     @staticmethod
     def check(manager: Manager, perm: int) -> bool:
@@ -27,12 +28,13 @@ async def authManager(request: Request, session_: bool=False) -> Union[Manager, 
         raise HTTPException(status_code=401, detail="No such session!")
 
     try:
-        uid, sid, key = auth.split(".")
+        sid, uid, key = auth.split(".")
         uid = int(uid)
         sid = int(sid)
-        key = str(UUID(key))
+        key = UUID(key)
 
         if (session := await Session.get_or_none(id=sid, manager__id=uid, token=key).select_related("manager")) is None:
+            print(1)
             raise ValueError
 
         return session if session_ else session.manager

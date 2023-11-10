@@ -10,6 +10,8 @@ router = APIRouter(prefix="/api/v0/categories")
 
 @router.get("/")
 async def get_categories(page: int=0, limit: int = 50):
+    if limit == 0:
+        limit = await Category.all().count()
     return {"results": await Category.all().limit(limit).offset(page * limit), "count": await Category.all().count()}
 
 
