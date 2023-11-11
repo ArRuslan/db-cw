@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from tortoise.expressions import Q
 
 from app.models import Characteristic, ProductCharacteristic
 from app.models.product import Product
@@ -11,6 +12,12 @@ router = APIRouter(prefix="/api/v0/products")
 @router.get("/")
 async def get_products(page: int=0, limit: int = 50):
     return {"results": await Product.all().limit(limit).offset(page * limit), "count": await Product.all().count()}
+
+
+@router.get("/search")
+async def search_products(page: int=0, anything: str=""):
+    q = Product.all().filter(Q(model__istartswith=anything) | Q(manufacturer__istartswith=anything))
+    return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
 
 
 @router.get("/{product_id}")

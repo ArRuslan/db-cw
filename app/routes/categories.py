@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from tortoise.expressions import Q
 
 from app.models.category import Category
 from app.models.product import Product
@@ -17,7 +18,7 @@ async def get_categories(page: int=0, limit: int = 50):
 
 @router.get("/search")
 async def search_categories(page: int=0, name: str="", description: str=""):
-    q = Category.all().filter(name__istartswith=name, description__istartswith=description)
+    q = Category.all().filter(Q(name__istartswith=name) | Q(description__istartswith=description))
     return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
 
 

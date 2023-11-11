@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from tortoise.expressions import Q
 
 from app.models.customer import Customer
 from app.schemas.customers import CustomerModel
@@ -10,6 +11,13 @@ router = APIRouter(prefix="/api/v0/customers")
 @router.get("/")
 async def get_customers(manager: AuthManagerDep, page: int = 0, limit: int = 50):
     return {"results": await Customer.all().limit(limit).offset(page * limit), "count": await Customer.all().count()}
+
+
+@router.get("/search")
+async def search_customers(page: int=0, anything: str=""):
+    q = Customer.all().filter(Q(first_name__istartswith=anything) | Q(first_name__istartswith=anything) |
+                              Q(email__istartswith=anything))
+    return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
 
 
 @router.get("/{category_id}")

@@ -14,7 +14,8 @@ router = APIRouter(prefix="/api/v0/orders")
 
 @router.get("/")
 async def get_orders(page: int=0, limit: int = 50):
-    return {"results": await Order.all().limit(limit).offset(page * limit), "count": await Order.all().count()}
+    orders = await Order.all().limit(limit).offset(page * limit).select_related("customer")
+    return {"results": [await order_to_resp(order) for order in orders], "count": await Order.all().count()}
 
 
 @router.post("/")
@@ -37,15 +38,7 @@ async def create_order(data: OrderCreateModel):
     return await get_order(order.id)
 
 
-@router.get("/{order_id}")
-async def get_order(order_id: int, manager: AuthManagerDep):
-    q = {"id": order_id}
-    if not Permissions.check(manager, Permissions.MANAGE_ORDERS):
-        q["manager"] = manager
-
-    if (order := await Order.get_or_none(**q).select_related("customer")) is None:
-        raise HTTPException(status_code=404, detail="Unknown order!")
-
+async def order_to_resp(order: Order) -> list[dict]:
     resp = (await OrderPd.from_tortoise_orm(order)).model_dump()
     resp["customer"] = (await CustomerPd.from_tortoise_orm(order.customer)).model_dump()
     resp["items"] = []
@@ -54,6 +47,16 @@ async def get_order(order_id: int, manager: AuthManagerDep):
                              (await OrderItemPd.from_tortoise_orm(prod.orderitems)).model_dump(exclude={"id"}))
 
     return resp
+
+
+@router.get("/{order_id}")
+async def get_order(order_id: int):
+    q = {"id": order_id}
+
+    if (order := await Order.get_or_none(**q).select_related("customer")) is None:
+        raise HTTPException(status_code=404, detail="Unknown order!")
+
+    return await order_to_resp(order)
 
 
 @router.patch("/{order_id}")
