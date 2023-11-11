@@ -11,3 +11,7 @@ class CategoryCreateModel(BaseModel):
 class CategoryUpdateModel(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+
+
+class CategoriesBatchLoadModel(BaseModel):
+    ids: list[int]
