@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException
 from tortoise.expressions import Q
 
 from app.models.customer import Customer
+from app.schemas import SearchData
 from app.schemas.customers import CustomerModel
-from app.utils import AuthManagerDep, Permissions
+from app.utils import AuthManagerDep, Permissions, search
 
 router = APIRouter(prefix="/api/v0/customers")
 
@@ -11,6 +12,12 @@ router = APIRouter(prefix="/api/v0/customers")
 @router.get("/")
 async def get_customers(manager: AuthManagerDep, page: int = 0, limit: int = 50):
     return {"results": await Customer.all().limit(limit).offset(page * limit), "count": await Customer.all().count()}
+
+
+@router.post("/search")
+async def search_customer_post(data: SearchData):
+    query = search(Customer, data)
+    return {"results": await query, "count": await query.count()}
 
 
 @router.get("/search")

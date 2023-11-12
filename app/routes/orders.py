@@ -6,8 +6,9 @@ from app.models.customer import CustomerPd
 from app.models.order import Order, OrderPd
 from app.models.order_item import OrderItemPd, OrderItem
 from app.models.product import ProductPd
+from app.schemas import SearchData
 from app.schemas.orders import OrderCreateModel, OrderUpdateModel
-from app.utils import AuthManagerDep, Permissions
+from app.utils import AuthManagerDep, Permissions, search
 
 router = APIRouter(prefix="/api/v0/orders")
 
@@ -16,6 +17,12 @@ router = APIRouter(prefix="/api/v0/orders")
 async def get_orders(page: int=0, limit: int = 50):
     orders = await Order.all().limit(limit).offset(page * limit).select_related("customer")
     return {"results": [await order_to_resp(order) for order in orders], "count": await Order.all().count()}
+
+
+@router.post("/search")
+async def search_order_post(data: SearchData):
+    query = search(Order, data).select_related("customer")
+    return {"results": [await order_to_resp(order) for order in await query], "count": await query.count()}
 
 
 @router.post("/")

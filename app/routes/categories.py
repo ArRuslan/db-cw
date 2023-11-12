@@ -3,8 +3,9 @@ from tortoise.expressions import Q
 
 from app.models.category import Category
 from app.models.product import Product
+from app.schemas import SearchData
 from app.schemas.categories import CategoryCreateModel, CategoryUpdateModel, CategoriesBatchLoadModel
-from app.utils import Permissions, AuthManagerDep
+from app.utils import Permissions, AuthManagerDep, search
 
 router = APIRouter(prefix="/api/v0/categories")
 
@@ -20,6 +21,12 @@ async def get_categories(page: int=0, limit: int = 50):
 async def search_categories(page: int=0, name: str="", description: str=""):
     q = Category.all().filter(Q(name__istartswith=name) | Q(description__istartswith=description))
     return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
+
+
+@router.post("/search")
+async def search_categories(data: SearchData):
+    query = search(Category, data)
+    return {"results": await query, "count": await query.count()}
 
 
 @router.get("/{category_id}")

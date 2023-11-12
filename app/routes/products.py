@@ -3,8 +3,9 @@ from tortoise.expressions import Q
 
 from app.models import Characteristic, ProductCharacteristic
 from app.models.product import Product
+from app.schemas import SearchData
 from app.schemas.products import ProductCreateModel, ProductUpdateModel, PutCharacteristic
-from app.utils import AuthManagerDep, Permissions
+from app.utils import AuthManagerDep, Permissions, search
 
 router = APIRouter(prefix="/api/v0/products")
 
@@ -12,6 +13,12 @@ router = APIRouter(prefix="/api/v0/products")
 @router.get("/")
 async def get_products(page: int=0, limit: int = 50):
     return {"results": await Product.all().limit(limit).offset(page * limit), "count": await Product.all().count()}
+
+
+@router.post("/search")
+async def search_products_post(data: SearchData):
+    query = search(Product, data)
+    return {"results": await query, "count": await query.count()}
 
 
 @router.get("/search")

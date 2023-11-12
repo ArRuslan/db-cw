@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 
 from app.models import Characteristic
+from app.schemas import SearchData
 from app.schemas.characteristics import CharCreateModel, CharUpdateModel
-from app.utils import AuthManagerDep, Permissions
+from app.utils import AuthManagerDep, Permissions, search
 
 router = APIRouter(prefix="/api/v0/characteristics")
 
@@ -11,6 +12,12 @@ router = APIRouter(prefix="/api/v0/characteristics")
 async def get_characteristics(page: int=0, limit: int = 50):
     return {"results": await Characteristic.all().limit(limit).offset(page * limit),
             "count": await Characteristic.all().count()}
+
+
+@router.post("/search")
+async def search_characteristics_post(data: SearchData):
+    query = search(Characteristic, data)
+    return {"results": await query, "count": await query.count()}
 
 
 @router.get("/{char_id}")
