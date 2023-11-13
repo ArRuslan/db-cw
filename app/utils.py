@@ -37,7 +37,6 @@ async def authManager(request: Request, session_: bool=False) -> Union[Manager, 
         key = UUID(key)
 
         if (session := await Session.get_or_none(id=sid, manager__id=uid, token=key).select_related("manager")) is None:
-            print(1)
             raise ValueError
 
         return session if session_ else session.manager
@@ -73,7 +72,7 @@ SEARCH_SUFFIX = {
 
 def search(model: Type[Model], data: SearchData):
     fields = set(model.__annotations__.keys())
-    query = model.all().limit(data.pagination.pageSize).offset(data.pagination.pageSize * data.pagination.page)
+    query = model.all()
     filter_query = None
     for item in data.filter.items:
         filter_key = item.field
@@ -106,4 +105,4 @@ def search(model: Type[Model], data: SearchData):
     if orderings:
         query = query.order_by(*orderings)
 
-    return query
+    return query.limit(data.pagination.pageSize).offset(data.pagination.pageSize * data.pagination.page), query

@@ -16,8 +16,8 @@ async def get_customers(manager: AuthManagerDep, page: int = 0, limit: int = 50)
 
 @router.post("/search")
 async def search_customer_post(data: SearchData):
-    query = search(Customer, data)
-    return {"results": await query, "count": await query.count()}
+    query, countQuery = search(Customer, data)
+    return {"results": await query, "count": await countQuery.count()}
 
 
 @router.get("/search")

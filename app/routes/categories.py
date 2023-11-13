@@ -25,8 +25,8 @@ async def search_categories(page: int=0, name: str="", description: str=""):
 
 @router.post("/search")
 async def search_categories(data: SearchData):
-    query = search(Category, data)
-    return {"results": await query, "count": await query.count()}
+    query, countQuery = search(Category, data)
+    return {"results": await query, "count": await countQuery.count()}
 
 
 @router.get("/{category_id}")

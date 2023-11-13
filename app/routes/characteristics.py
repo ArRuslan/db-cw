@@ -16,8 +16,8 @@ async def get_characteristics(page: int=0, limit: int = 50):
 
 @router.post("/search")
 async def search_characteristics_post(data: SearchData):
-    query = search(Characteristic, data)
-    return {"results": await query, "count": await query.count()}
+    query, countQuery = search(Characteristic, data)
+    return {"results": await query, "count": await countQuery.count()}
 
 
 @router.get("/{char_id}")

@@ -21,8 +21,9 @@ async def get_orders(page: int=0, limit: int = 50):
 
 @router.post("/search")
 async def search_order_post(data: SearchData):
-    query = search(Order, data).select_related("customer")
-    return {"results": [await order_to_resp(order) for order in await query], "count": await query.count()}
+    query, countQuery = search(Order, data)
+    query = query.select_related("customer")
+    return {"results": [await order_to_resp(order) for order in await query], "count": await countQuery.count()}
 
 
 @router.post("/")

@@ -17,8 +17,8 @@ async def get_products(page: int=0, limit: int = 50):
 
 @router.post("/search")
 async def search_products_post(data: SearchData):
-    query = search(Product, data)
-    return {"results": await query, "count": await query.count()}
+    query, countQuery = search(Product, data)
+    return {"results": await query, "count": await countQuery.count()}
 
 
 @router.get("/search")
