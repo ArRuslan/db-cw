@@ -22,7 +22,7 @@ async def search_customer_post(data: SearchData):
 
 @router.get("/search")
 async def search_customers(page: int=0, anything: str=""):
-    q = Customer.all().filter(Q(first_name__icontains=anything) | Q(first_name__icontains=anything) |
+    q = Customer.all().filter(Q(first_name__icontains=anything) | Q(last_name__icontains=anything) |
                               Q(email__istartswith=anything))
     return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
 
