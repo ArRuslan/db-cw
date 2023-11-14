@@ -34,7 +34,7 @@ async def customer_statistics(manager: AuthManagerDep, customer_id: int):
     return await conn.execute_query_dict(query, [customer_id])
 
 
-@router.get("/customers/{category_id}")
+@router.get("/categories/{category_id}")
 async def categories_statistics(manager: AuthManagerDep, category_id: int):
     if not Permissions.check(manager, Permissions.READ_STATISTICS):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
@@ -54,21 +54,52 @@ async def categories_statistics(manager: AuthManagerDep, category_id: int):
     return await conn.execute_query_dict(query, [category_id])
 
 
-#@router.get("/time/year")
-#async def last_year_statistics(manager: AuthManagerDep, category_id: int):
-#    if not Permissions.check(manager, Permissions.READ_STATISTICS):
-#        raise HTTPException(status_code=403, detail="Insufficient privileges!")
-#
-#    conn = connections.get("default")
-#    query = (
-#        "SELECT COUNT(order.id) AS order_count, COUNT(return.id) AS return_count, "
-#        "SUM(orderitem.quantity) AS ordered_item_count, SUM(`return`.quantity) AS returned_items_count,"
-#        "SUM(orderitem.price) AS total_money "
-#        "FROM category "
-#        "INNER JOIN product ON product.category_id=category.id "
-#        "INNER JOIN orderitem ON product.id=orderitem.product_id "
-#        "INNER JOIN `order` ON orderitem.order_id=`order`.id "
-#        "INNER JOIN `return` ON `order`.id=`return`.order_id "
-#        "WHERE category.id=?;"
-#    )
-#    return await conn.execute_query_dict(query, [category_id])
+@router.get("/customers-top")
+async def customers_top(manager: AuthManagerDep, count: int = 100):
+    if not Permissions.check(manager, Permissions.READ_STATISTICS):
+        raise HTTPException(status_code=403, detail="Insufficient privileges!")
+
+    conn = connections.get("default")
+    query = (
+        "SELECT customer.id, customer.first_name, customer.last_name, customer.email, customer.phone_number "
+        "FROM customer "
+        "INNER JOIN `order` ON customer.id = `order`.customer_id "
+        "INNER JOIN orderitem on `order`.id = orderitem.order_id "
+        "WHERE `order`.creation_time > `order`.creation_time - INTERVAL 1 YEAR "
+        "ORDER BY COUNT(orderitem.id), SUM(orderitem.price*orderitem.quantity) LIMIT ?;"
+    )
+    return await conn.execute_query_dict(query, [count])
+
+
+@router.get("/time/year")
+async def last_year_statistics(manager: AuthManagerDep):
+    if not Permissions.check(manager, Permissions.READ_STATISTICS):
+        raise HTTPException(status_code=403, detail="Insufficient privileges!")
+
+    conn = connections.get("default")
+    query = (
+        "SELECT MONTH(`order`.creation_time) as month, COUNT(order.id) AS order_count, "
+        "SUM(orderitem.price*orderitem.quantity) AS total_money, AVG(orderitem.price*orderitem.quantity) AS avg_money "
+        "FROM `order` "
+        "INNER JOIN orderitem ON `order`.id=orderitem.order_id "
+        "WHERE `order`.creation_time > `order`.creation_time - INTERVAL 1 YEAR "
+        "GROUP BY month ORDER BY month;"
+    )
+    return await conn.execute_query_dict(query)
+
+
+@router.get("/time/month")
+async def last_year_statistics(manager: AuthManagerDep):
+    if not Permissions.check(manager, Permissions.READ_STATISTICS):
+        raise HTTPException(status_code=403, detail="Insufficient privileges!")
+
+    conn = connections.get("default")
+    query = (
+        "SELECT DAY(`order`.creation_time) as day, COUNT(order.id) AS order_count, "
+        "SUM(orderitem.price*orderitem.quantity) AS total_money, AVG(orderitem.price*orderitem.quantity) AS avg_money "
+        "FROM `order` "
+        "INNER JOIN orderitem ON `order`.id=orderitem.order_id "
+        "WHERE `order`.creation_time > `order`.creation_time - INTERVAL 1 MONTH "
+        "GROUP BY day ORDER BY day;"
+    )
+    return await conn.execute_query_dict(query)

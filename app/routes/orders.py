@@ -41,7 +41,14 @@ async def create_order(data: OrderCreateModel):
 
     q = {prod.id: prod.quantity for prod in data.products}
     for prod in await Product.filter(id__in=[prod.id for prod in data.products]).all():
+        lim = prod.per_order_limit if prod.per_order_limit != 0 else prod.quantity
+        lim = min(lim, prod.quantity)
+        if q[prod.id] > lim:
+            q[prod.id] = lim
+        if lim == 0:
+            continue
         await OrderItem.create(order=order, product=prod, quantity=q[prod.id], price=prod.price)
+        await prod.update(quantity=prod.quantity-q[prod.id])
 
     return await get_order(order.id)
 

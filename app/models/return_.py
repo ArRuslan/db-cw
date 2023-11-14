@@ -13,4 +13,4 @@ class Return(Model):
     quantity: int = fields.IntField()
     reason: str = fields.TextField(null=True, default=None)
     order: models.Order = fields.ForeignKeyField("models.Order")
-    order_item: models.OrderItem = fields.ForeignKeyField("models.OrderItem")
+    order_item: models.OrderItem = fields.OneToOneField("models.OrderItem")
