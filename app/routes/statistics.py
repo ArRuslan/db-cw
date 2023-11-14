@@ -56,13 +56,15 @@ async def categories_statistics(manager: AuthManagerDep, category_id: int):
 
 @router.get("/customers-top")
 async def customers_top(manager: AuthManagerDep, count: int = 100):
+    if count < 1:
+        count = 10
     if not Permissions.check(manager, Permissions.READ_STATISTICS):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
     conn = connections.get("default")
     query = (
         "SELECT customer.id, customer.first_name, customer.last_name, customer.email, customer.phone_number, "
-        "COUNT(orderitem.id) AS order_items, SUM(orderitem.price * orderitem.quantity) AS money_spent "
+        "COUNT(orderitem.id) AS order_items, SUM(orderitem.price * orderitem.quantity) AS total_money "
         "FROM customer "
         "INNER JOIN `order` ON customer.id = `order`.customer_id "
         "INNER JOIN orderitem on `order`.id = orderitem.order_id "
