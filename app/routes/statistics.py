@@ -67,7 +67,8 @@ async def customers_top(manager: AuthManagerDep, count: int = 100):
         "INNER JOIN `order` ON customer.id = `order`.customer_id "
         "INNER JOIN orderitem on `order`.id = orderitem.order_id "
         "WHERE `order`.creation_time > `order`.creation_time - INTERVAL 1 YEAR "
-        "ORDER BY COUNT(orderitem.id), SUM(orderitem.price*orderitem.quantity) LIMIT %s;"
+        "GROUP BY customer.id, customer.first_name, customer.last_name, customer.email, customer.phone_number "
+        "ORDER BY COUNT(orderitem.id) DESC, SUM(orderitem.price * orderitem.quantity) DESC LIMIT %s;"
     )
     return await conn.execute_query_dict(query, [count])
 
@@ -79,7 +80,7 @@ async def last_year_statistics(manager: AuthManagerDep):
 
     conn = connections.get("default")
     query = (
-        "SELECT MONTH(`order`.creation_time) as month, COUNT(order.id) AS order_count, "
+        "SELECT MONTH(`order`.creation_time) as month, COUNT(DISTINCT `order`.id) AS order_count, "
         "SUM(orderitem.price*orderitem.quantity) AS total_money "
         "FROM `order` "
         "INNER JOIN orderitem ON `order`.id=orderitem.order_id "
@@ -96,7 +97,7 @@ async def last_year_statistics(manager: AuthManagerDep):
 
     conn = connections.get("default")
     query = (
-        "SELECT DAY(`order`.creation_time) as day, COUNT(order.id) AS order_count, "
+        "SELECT DAY(`order`.creation_time) as day, COUNT(DISTINCT `order`.id) AS order_count, "
         "SUM(orderitem.price*orderitem.quantity) AS total_money "
         "FROM `order` "
         "INNER JOIN orderitem ON `order`.id=orderitem.order_id "
