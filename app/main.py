@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 
-from app.routes import categories, products, orders, managers, customers, auth, characteristics
+from app.routes import categories, products, orders, managers, customers, auth, characteristics, statistics
 
 app = FastAPI()
 
@@ -21,6 +21,7 @@ app.include_router(managers.router)
 app.include_router(customers.router)
 app.include_router(auth.router)
 app.include_router(characteristics.router)
+app.include_router(statistics.router)
 
 register_tortoise(
     app,

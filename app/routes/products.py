@@ -23,7 +23,7 @@ async def search_products_post(data: SearchData):
 
 @router.get("/search")
 async def search_products(page: int=0, anything: str=""):
-    q = Product.all().filter(Q(model__istartswith=anything) | Q(manufacturer__istartswith=anything))
+    q = Product.all().filter(Q(model__contains=anything) | Q(manufacturer__istartswith=anything))
     return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
 
 
