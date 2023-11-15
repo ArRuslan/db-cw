@@ -1,6 +1,9 @@
 from datetime import timedelta, datetime
+from io import BytesIO
+from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
+from openpyxl.workbook import Workbook
 from pytz import UTC
 from tortoise.functions import Count, Sum
 
@@ -14,7 +17,7 @@ router = APIRouter(prefix="/api/v0/reports")
 
 
 @router.get("/products/{product_id}")
-async def customer_statistics(manager: AuthManagerDep, product_id: int):
+async def customer_statistics(manager: AuthManagerDep, product_id: int, fmt: Literal["json", "excel"]="json"):
     if not Permissions.check(manager, Permissions.READ_REPORTS):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
@@ -35,11 +38,31 @@ async def customer_statistics(manager: AuthManagerDep, product_id: int):
         "order_item_count": product.orderitem_count,
     }
 
+    if fmt == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.append({"A": "Product Id:", "B": product.id})
+        ws.append({"A": "Product Manufacturer:", "B": product.manufacturer})
+        ws.append({"A": "Product Model:", "B": product.model})
+        ws.append({"A": "Product Price:", "B": product.price})
+        ws.append({"A": "Product Quantity:", "B": product.quantity})
+        ws.append({"A": "Limit per order:", "B": product.per_order_limit})
+        ws.append({"A": "Warranty days:", "B": product.warranty_days})
+        ws.append({"A": "Category:", "B": product.category.name})
+        if product.image_url:
+            ws.append({"A": "Image url:", "B": product.image_url})
+        ws.append({"A": "Order count:", "B": product.order_count})
+        ws.append({"A": "Order item count:", "B": product.orderitem_count})
+        fp = BytesIO()
+        setattr(fp, "name", f"product-{product.id}-report.xlsx")
+        wb.save(fp)
+        return Response(content=fp.getvalue(), media_type="application/vnd.ms-excel")
+
     return result
 
 
 @router.get("/customers/{customer_id}")
-async def customer_statistics(manager: AuthManagerDep, customer_id: int):
+async def customer_statistics(manager: AuthManagerDep, customer_id: int, fmt: Literal["json", "excel"]="json"):
     if not Permissions.check(manager, Permissions.READ_REPORTS):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
@@ -82,11 +105,43 @@ async def customer_statistics(manager: AuthManagerDep, customer_id: int):
             if orderitems:
                 result["averages"][date] += order_total / len(orderitems)
 
+    if fmt == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.append({"A": "Customer Id", "B": customer.id})
+        ws.append({"A": "Customer First Name", "B": customer.first_name})
+        ws.append({"A": "Customer Last Name", "B": customer.last_name})
+        ws.append({"A": "Customer Email", "B": customer.email})
+        ws.append({"A": "Customer Phone Number", "B": str(customer.phone_number)})
+        ws.append({"A": "Order count", "B": customer.order_count})
+        ws.append({"A": "Total", "B": result["total"]})
+        ws.append({})
+        ws.append({"A": "Average per month:"})
+        for month, money in result["averages"].items():
+            ws.append({"A": datetime.strptime(month, "%m.%Y"), "B": money})
+        ws.append({})
+        ws.append({"A": "Orders:"})
+        for order in result["orders"]:
+            ws.append({"A": "Status", "B": order["status"]})
+            ws.append({"A": "Creation Time", "B": order["creation_time"].replace(tzinfo=None)})
+            ws.append({"A": "Address", "B": order["address"]})
+            ws.append({"A": "Type", "B": order["type"]})
+            ws.append({"A": "Total", "B": order["total"]})
+            ws.append({"A": "Item Name", "B": "Price", "C": "Quantity"})
+            for item in order["items"]:
+                ws.append({"A": f"{item['manufacturer']} {item['model']}", "B": item["price"],
+                           "C": item["quantity"]})
+            ws.append({})
+        fp = BytesIO()
+        setattr(fp, "name", f"customer-{customer.id}-report.xlsx")
+        wb.save(fp)
+        return Response(content=fp.getvalue(), media_type="application/vnd.ms-excel")
+
     return result
 
 
 @router.get("/categories/{category_id}")
-async def customer_statistics(manager: AuthManagerDep, category_id: int):
+async def customer_statistics(manager: AuthManagerDep, category_id: int, fmt: Literal["json", "excel"]="json"):
     if not Permissions.check(manager, Permissions.READ_REPORTS):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
@@ -110,5 +165,21 @@ async def customer_statistics(manager: AuthManagerDep, category_id: int):
 
     result["order_count"] = await Order.filter(orderitems__product__id__in=[prod.id for prod in products]).count()
     result["product_average_price"] /= result["product_count"]
+
+    if fmt == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.append({"A": "Category Id:", "B": category_id})
+        ws.append({"A": "Category Name:", "B": category.name})
+        ws.append({"A": "Category Description:", "B": category.description})
+        ws.append({})
+        ws.append({"A": "Product count:", "B": result["product_count"]})
+        ws.append({"A": "Order count:", "B": result["order_count"]})
+        ws.append({"A": "Product quantity:", "B": result["product_quantity"]})
+        ws.append({"A": "Product average price:", "B": result["product_average_price"]})
+        fp = BytesIO()
+        setattr(fp, "name", f"category-{category.id}-report.xlsx")
+        wb.save(fp)
+        return Response(content=fp.getvalue(), media_type="application/vnd.ms-excel")
 
     return result
