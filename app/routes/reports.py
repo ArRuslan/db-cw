@@ -92,7 +92,7 @@ async def customer_statistics(manager: AuthManagerDep, customer_id: int, fmt: Li
                 (await ProductPd.from_tortoise_orm(prod)).model_dump() |
                 (await OrderItemPd.from_tortoise_orm(prod.orderitems)).model_dump(exclude={"id"})
             )
-            order_total = prod.orderitems.quantity * prod.orderitems.price
+            order_total += prod.orderitems.quantity * prod.orderitems.price
 
         result["orders"][-1]["total"] = order_total
         result["total"] += order_total
@@ -155,6 +155,7 @@ async def customer_statistics(manager: AuthManagerDep, category_id: int, fmt: Li
         "order_count": 0,
         "product_quantity": 0,
         "product_average_price": 0,
+        "products": [],
     }
 
     products = await Product.filter(category=category).all()
@@ -162,6 +163,7 @@ async def customer_statistics(manager: AuthManagerDep, category_id: int, fmt: Li
     for product in products:
         result["product_quantity"] += product.quantity
         result["product_average_price"] += product.price
+        result["products"].append((await ProductPd.from_tortoise_orm(product)).model_dump())
 
     result["order_count"] = await Order.filter(orderitems__product__id__in=[prod.id for prod in products]).count()
     result["product_average_price"] /= result["product_count"]
@@ -177,6 +179,15 @@ async def customer_statistics(manager: AuthManagerDep, category_id: int, fmt: Li
         ws.append({"A": "Order count:", "B": result["order_count"]})
         ws.append({"A": "Product quantity:", "B": result["product_quantity"]})
         ws.append({"A": "Product average price:", "B": result["product_average_price"]})
+        ws.append({})
+        ws.append({"A": "PRODUCTS:"})
+        ws.append({})
+        ws.append({"A": "model", "B": "manufacturer", "C": "price", "D": "quantity", "E": "per_order_limit",
+                   "F": "warranty_days"})
+        for prod in result["products"]:
+            ws.append({"A": prod["model"], "B": prod["manufacturer"], "C": prod["price"], "D": prod["quantity"],
+                       "E": prod["per_order_limit"], "F": prod["warranty_days"]})
+
         fp = BytesIO()
         setattr(fp, "name", f"category-{category.id}-report.xlsx")
         wb.save(fp)

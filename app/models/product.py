@@ -20,7 +20,7 @@ class Product(Model):
     characteristics = fields.ManyToManyField("models.Characteristic", through="productcharacteristic")
 
     class PydanticMeta:
-        exclude = ["category"]
+        exclude = ["category", "characteristics"]
 
 
 ProductPd = pydantic_model_creator(Product, name="ProductPd")

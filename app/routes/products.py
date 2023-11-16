@@ -29,22 +29,22 @@ async def search_products(page: int=0, anything: str=""):
 
 
 @router.get("/price-recommendations")
-async def price_recommendations(manager: AuthManagerDep):
+async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
     if not Permissions.check(manager, Permissions.MANAGE_PRODUCTS):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
     conn = connections.get("default")
     query = (
-        "SELECT product.id, product.price, DAY(`order`.creation_time) AS day, COUNT(orderitem.id) AS items "
+        "SELECT product.id, product.price, DAYOFYEAR(`order`.creation_time) AS day, COUNT(orderitem.id) AS items "
         "FROM product "
         "INNER JOIN orderitem ON product.id = orderitem.product_id "
         "INNER JOIN `order` ON orderitem.order_id = `order`.id "
-        "WHERE `order`.creation_time > `order`.creation_time - INTERVAL 2 WEEK "
+        "WHERE `order`.creation_time > `order`.creation_time - INTERVAL %s WEEK "
         "GROUP BY product.id, product.price, day;"
     )
 
     products = {}
-    for res in await conn.execute_query_dict(query):
+    for res in await conn.execute_query_dict(query, [interval]):
         if res["id"] not in products:
             products[res["id"]] = []
         products[res["id"]].append({"price": res["price"], "day": res["day"], "count": res["items"]})
@@ -86,12 +86,15 @@ async def price_recommendations(manager: AuthManagerDep):
     result = {}
     for product_id in products:
         deltas = sum([day["delta"] for day in products[product_id][:-1]])
-        if deltas > products[product_id][-1]["delta"]:
-            result[product_id] = "down"
-        else:
-            result[product_id] = "up"
 
-    return {"total_analyzed": total_analyzed, "ignored": ignored_count, "result": result, "intermediates": products}
+        price = products[product_id][0]["price"]
+        res = {"price": price}
+        if deltas > products[product_id][-1]["delta"]:
+            result[product_id] = res | {"action": "down", "new_price": round(price * 0.975, 2)}
+        else:
+            result[product_id] = res | {"action": "up", "new_price": round(price * 1.025, 2)}
+
+    return {"total_analyzed": total_analyzed, "ignored": ignored_count, "result": result}
 
 
 @router.get("/{product_id}")
