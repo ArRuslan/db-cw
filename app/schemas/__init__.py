@@ -11,7 +11,7 @@ class PaginationModel(BaseModel):
 class FilterItem(BaseModel):
     field: str
     operator: Literal[">", ">=", "=", "<=", "<", "contains", "between", "equals", "startsWith", "endsWith", "isEmpty",
-                      "isNotEmpty", "isAnyOf", "!="]
+                      "isNotEmpty", "isAnyOf", "!=", "is", "not", "after", "before"]
     value: str | list[str] | None = None
 
 

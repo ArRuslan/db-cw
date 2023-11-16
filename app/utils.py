@@ -65,9 +65,13 @@ SEARCH_SUFFIX = {
     "isNotEmpty": "__not_isnull",
     "isAnyOf": "__in",
     "!=": "__not",
+    "not": "__not",
+    "after": "__gt",
+    "before": "__lt",
 
     "=": "",
     "equals": "",
+    "is": "",
 }
 
 
@@ -77,7 +81,8 @@ def search(model: Type[Model], data: SearchData):
     filter_query = None
     for item in data.filter.items:
         filter_key = item.field
-        if filter_key not in fields or item.value is None or item.operator not in SEARCH_SUFFIX:
+        fk_ = filter_key.split("__")[0]
+        if fk_ not in fields or item.value is None or item.operator not in SEARCH_SUFFIX:
             continue
 
         filter_key += SEARCH_SUFFIX[item.operator]
