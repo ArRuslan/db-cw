@@ -83,18 +83,27 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
         for day in products[product_id]:
             day["delta"] = day["count"] - average
 
-    result = {}
+    raw_result = {}
     for product_id in products:
         deltas = sum([day["delta"] for day in products[product_id][:-1]])
 
         price = products[product_id][0]["price"]
         res = {"price": price}
         if deltas > products[product_id][-1]["delta"]:
-            result[product_id] = res | {"action": "down", "new_price": round(price * 0.975, 2)}
+            raw_result[product_id] = res | {"action": "down", "new_price": round(price * 0.975, 2)}
         else:
-            result[product_id] = res | {"action": "up", "new_price": round(price * 1.025, 2)}
+            raw_result[product_id] = res | {"action": "up", "new_price": round(price * 1.025, 2)}
 
-    return {"total_analyzed": total_analyzed, "ignored": ignored_count, "result": result}
+    result = []
+    for prod in await Product.filter(id__in=list(raw_result.keys())).all():
+        result.append({
+            "id": prod.id,
+            "model": prod.model,
+            "manufacturer": prod.manufacturer,
+            **raw_result[prod.id],
+        })
+
+    return {"total_analyzed": total_analyzed, "ignored": ignored_count, "raw_result": raw_result, "result": result}
 
 
 @router.get("/{product_id}")
