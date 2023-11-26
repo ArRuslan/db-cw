@@ -90,9 +90,9 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
         price = products[product_id][0]["price"]
         res = {"price": price}
         if deltas > products[product_id][-1]["delta"]:
-            raw_result[product_id] = res | {"action": "down", "new_price": round(price * 0.975, 2)}
+            raw_result[product_id] = res | {"action": "down", "recommended_price": round(price * 0.975, 2)}
         else:
-            raw_result[product_id] = res | {"action": "up", "new_price": round(price * 1.025, 2)}
+            raw_result[product_id] = res | {"action": "up", "recommended_price": round(price * 1.025, 2)}
 
     result = []
     for prod in await Product.filter(id__in=list(raw_result.keys())).all():
@@ -116,9 +116,14 @@ async def get_product_characteristics(product_id: int):
     if (product := await Product.get_or_none(id=product_id)) is None:
         raise HTTPException(status_code=404, detail="Unknown product!")
 
-    resp = {}
+    resp = []
     for char in await product.characteristics.all().select_related("productcharacteristics"):
-        resp[char.name] = {"id": char.id, "value": char.productcharacteristics.value, "unit": char.measurement_unit}
+        resp.append({
+            "id": char.id,
+            "name": char.name,
+            "value": char.productcharacteristics.value,
+            "unit": char.measurement_unit
+        })
 
     return resp
 
