@@ -15,8 +15,8 @@ async def customer_statistics(manager: AuthManagerDep, customer_id: int):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
     conn = connections.get("default")
-    query = (
-        "SELECT COUNT(DISTINCT order.id) AS order_count, COUNT(return.id) AS return_count,"
+    query = (  # TODO: fix SUM(`return`.quantity) AS returned_items_count
+        "SELECT COUNT(DISTINCT order.id) AS order_count, COUNT(DISTINCT return.id) AS return_count,"
         "COUNT(DISTINCT orderitem.product_id) AS ordered_product_count, SUM(orderitem.quantity) AS ordered_item_count, "
         "SUM(`return`.quantity) AS returned_items_count, SUM(DISTINCT O_SUMS.S) AS total_money,"
         "AVG(O_SUMS.S) AS avg_money "

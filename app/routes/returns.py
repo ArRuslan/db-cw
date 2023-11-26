@@ -25,10 +25,10 @@ async def create_return(data: ReturnCreateModel, manager: AuthManagerDep):
 
     if (order := await Order.get_or_none(id=data.order_id).select_related("customer")) is None:
         raise HTTPException(status_code=404, detail="Unknown order!")
-    if (product := await order.items.get_or_none(id=data.product_id).select_related("orderitems")) is None:
+    if (product := await order.items.filter().get_or_none(id=data.product_id).select_related("orderitems")) is None:
         raise HTTPException(status_code=404, detail="Unknown item!")
 
-    if data.quantity > product.orderitem.quantity:
+    if data.quantity > product.orderitems.quantity:
         raise HTTPException(status_code=400, detail="Return quantity cannot be bigger than order quantity!")
 
     ret = await Return.create(quantity=data.quantity, reason=data.reason, order=order, order_item=product.orderitems)
