@@ -35,10 +35,12 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
 
     conn = connections.get("default")
     query = (
-        "SELECT product.id, product.price, DAYOFYEAR(`order`.creation_time) AS day, COUNT(orderitem.id) AS items "
+        "SELECT product.id, product.price, DAYOFYEAR(`order`.creation_time) AS day, COUNT(orderitem.id) AS items,"
+        "SUM(`return`.quantity) AS returns "
         "FROM product "
         "INNER JOIN orderitem ON product.id = orderitem.product_id "
         "INNER JOIN `order` ON orderitem.order_id = `order`.id "
+        "LEFT JOIN `return` ON orderitem.id = `return`.id "
         "WHERE `order`.creation_time > `order`.creation_time - INTERVAL %s WEEK "
         "GROUP BY product.id, product.price, day;"
     )
@@ -139,7 +141,7 @@ async def set_product_characteristic(product_id: int, char_id: int, data: PutCha
         raise HTTPException(status_code=404, detail="Unknown characteristic!")
 
     await ProductCharacteristic.update_or_create({"value": data.value}, product=product, characteristic=char)
-    return {"id": char.id, "value": data.value, "unit": char.measurement_unit}
+    return {"id": char.id, "name": char.name, "value": data.value, "unit": char.measurement_unit}
 
 
 @router.delete("/{product_id}/chars/{char_id}", status_code=204)
