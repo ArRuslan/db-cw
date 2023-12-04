@@ -15,21 +15,27 @@ async def customer_statistics(manager: AuthManagerDep, customer_id: int):
         raise HTTPException(status_code=403, detail="Insufficient privileges!")
 
     conn = connections.get("default")
-    query = (  # TODO: fix SUM(`return`.quantity) AS returned_items_count
-        "SELECT COUNT(DISTINCT order.id) AS order_count, COUNT(DISTINCT return.id) AS return_count,"
-        "COUNT(DISTINCT orderitem.product_id) AS ordered_product_count, SUM(orderitem.quantity) AS ordered_item_count, "
-        "SUM(`return`.quantity) AS returned_items_count, SUM(DISTINCT O_SUMS.S) AS total_money,"
-        "AVG(O_SUMS.S) AS avg_money "
-        "FROM customer "
-        "LEFT JOIN `order` ON customer.id=`order`.customer_id "
-        "LEFT JOIN `return` ON `order`.id=`return`.order_id "
-        "LEFT JOIN orderitem ON `order`.id=orderitem.order_id "
-        "LEFT JOIN ("
-        "   SELECT SUM(orderitem.price*orderitem.quantity) AS S, customer.id as cus_id FROM orderitem AS orderitem "
-        "   INNER JOIN `order` ON orderitem.order_id=`order`.id INNER JOIN customer ON customer.id=`order`.customer_id "
-        "   GROUP BY orderitem.order_id"
+    query = (
+        "SELECT "
+        "    COUNT(DISTINCT `order`.id) AS order_count, "
+        "    COUNT(DISTINCT `return`.id) AS return_count, "
+        "    COUNT(DISTINCT orderitem.product_id) AS ordered_product_count, "
+        "    SUM(DISTINCT orderitem.quantity) AS ordered_item_count, "
+        "    SUM(DISTINCT `return`.quantity) AS returned_items_count, "
+        "    SUM(DISTINCT orderitem.price * orderitem.quantity) AS total_money, "
+        "    AVG(O_SUMS.S) AS avg_money "
+        "FROM "
+        "    customer "
+        "LEFT JOIN `order` ON customer.id = `order`.customer_id "
+        "LEFT JOIN orderitem ON `order`.id = orderitem.order_id "
+        "LEFT JOIN `return` ON orderitem.id = `return`.order_item_id "
+        "LEFT JOIN ( "
+        "    SELECT SUM(orderitem.price*orderitem.quantity) AS S, customer.id as cus_id FROM orderitem AS orderitem "
+        "    INNER JOIN `order` ON orderitem.order_id=`order`.id INNER JOIN customer ON customer.id=`order`.customer_id "
+        "    GROUP BY orderitem.order_id "
         ") O_SUMS ON O_SUMS.cus_id=customer.id "
-        "WHERE customer.id=%s;"
+        "WHERE "
+        "    customer.id = %s;"
     )
     return await conn.execute_query_dict(query, [customer_id])
 
