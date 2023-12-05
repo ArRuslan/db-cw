@@ -11,7 +11,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from pytz import UTC
 from tortoise.functions import Count, Sum
 
-from app.models import Product, Customer, Order, Category
+from app.models import Product, Customer, Order, Category, Return
 from app.models.order import OrderPd
 from app.models.order_item import OrderItemPd
 from app.models.product import ProductPd
@@ -145,6 +145,7 @@ async def customer_report(manager: AuthManagerDep, customer_id: int, fmt: Litera
         "phone_number": customer.phone_number,
         "order_count": customer.order_count,
         "orders": [],
+        "returns": [],
         "total": 0,
         "averages": {}
     }
@@ -174,10 +175,22 @@ async def customer_report(manager: AuthManagerDep, customer_id: int, fmt: Litera
             if orderitems:
                 result["averages"][date] += order_total / len(orderitems)
 
+        for ret in await Return.filter(order=order).select_related("order_item", "order_item__product").all():
+            result["returns"].append({
+                "item": {
+                    "model": ret.order_item.product.model,
+                    "manufacturer": ret.order_item.product.manufacturer,
+                    "price": ret.order_item.product.price,
+                },
+                "quantity": ret.quantity,
+                "time": ret.creation_time,
+            })
+
     if fmt == "excel":
         wb = Workbook()
         ws = CustomWorksheet(wb.active)
-        ws.append({"A": "Customer Id", "B": customer.id})
+        ws.append({"A": "REPORT GENERATED AT", "B": datetime.now()})
+        ws.append({})
         ws.append({"A": "Customer First Name", "B": customer.first_name})
         ws.append({"A": "Customer Last Name", "B": customer.last_name})
         ws.append({"A": "Customer Email", "B": customer.email})
@@ -207,6 +220,16 @@ async def customer_report(manager: AuthManagerDep, customer_id: int, fmt: Litera
                            "B": upd_cell(ws(item["price"]), fill=f85()),
                            "C": upd_cell(ws(item["quantity"]), fill=f85())})
             ws.append({})
+
+        ws.append({"A": upd_cell(ws("Returns:"), font=Font(bold=True), fill=mkfill("89EB34", .15))})
+        ws.append({"A": upd_cell(ws("Item name"), fill=f65()), "B": upd_cell(ws("Quantity"), fill=f65()),
+                   "C": upd_cell(ws("Time"), fill=f65()), "D": upd_cell(ws("Price (per item)"), fill=f65())})
+        for ret in result["returns"]:
+            ws.append({"A": upd_cell(ws(f"{ret['item']['manufacturer']} {ret['item']['model']}"), fill=f85()),
+                       "B": upd_cell(ws(ret["quantity"]), fill=f85()),
+                       "C": upd_cell(ws(ret["time"].replace(tzinfo=None)), fill=f85()),
+                       "D": upd_cell(ws(ret["item"]["price"]), fill=f85())})
+
         ws.fix_formatting()
         fp = BytesIO()
         setattr(fp, "name", f"customer-{customer.id}-report.xlsx")
@@ -247,6 +270,8 @@ async def category_report(manager: AuthManagerDep, category_id: int, fmt: Litera
     if fmt == "excel":
         wb = Workbook()
         ws = CustomWorksheet(wb.active)
+        ws.append({"A": "REPORT GENERATED AT", "B": datetime.now()})
+        ws.append({})
         ws.append({"A": "Category Id:", "B": category_id})
         ws.append({"A": "Category Name:", "B": category.name})
         ws.append({"A": "Category Description:", "B": category.description})

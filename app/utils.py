@@ -55,9 +55,9 @@ AuthSessionDep = Annotated[Manager, Depends(authManager)]
 
 SEARCH_SUFFIX = {
     ">": "__gt",
-    ">=": "__ge",
+    ">=": "__gte",
     "<": "__lt",
-    "<=": "__le",
+    "<=": "__lte",
     "contains": "__icontains",
     "startsWith": "__istartswith",
     "endsWith": "__iendswith",
