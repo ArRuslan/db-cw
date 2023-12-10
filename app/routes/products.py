@@ -28,6 +28,12 @@ async def search_products(page: int=0, anything: str=""):
     return {"results": await q.limit(50).offset(page * 50), "count": await q.count()}
 
 
+def avg(values: list):
+    if not values:
+        return 0
+    return sum(values) / len(values)
+
+
 @router.get("/price-recommendations")
 async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
     if not Permissions.check(manager, Permissions.MANAGE_PRODUCTS):
@@ -36,7 +42,7 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
     conn = connections.get("default")
     query = (
         "SELECT product.id, product.price, DAYOFYEAR(`order`.creation_time) AS day, COUNT(orderitem.id) AS items,"
-        "SUM(`return`.quantity) AS returns "
+        "SUM(COALESCE(`return`.quantity, 0)) AS returns "
         "FROM product "
         "INNER JOIN orderitem ON product.id = orderitem.product_id "
         "INNER JOIN `order` ON orderitem.order_id = `order`.id "
@@ -49,7 +55,12 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
     for res in await conn.execute_query_dict(query, [interval]):
         if res["id"] not in products:
             products[res["id"]] = []
-        products[res["id"]].append({"price": res["price"], "day": res["day"], "count": res["items"]})
+        products[res["id"]].append({
+            "price": res["price"],
+            "day": res["day"],
+            "count": res["items"],
+            "returns": res["returns"]
+        })
 
     total_analyzed = len(products)
 
@@ -68,9 +79,10 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
     ignored = []
     for product_id in products:
         count = products[product_id][0]["count"]
+        ret = products[product_id][0]["returns"]
         changed = False
         for day in products[product_id][1:]:
-            if day["count"] != count:
+            if day["count"] != count or day["returns"] != ret:
                 changed = True
                 break
         if not changed:
@@ -80,21 +92,37 @@ async def price_recommendations(manager: AuthManagerDep, interval: int = 2):
     for ig in ignored:
         del products[ig]
 
-    for product_id in products:
-        average = sum([day["count"] for day in products[product_id]]) / len(products[product_id])
-        for day in products[product_id]:
-            day["delta"] = day["count"] - average
+    percentages = {}
+    ignored = []
+    for product_id, days in products.items():
+        counts = [int(day["count"]) for day in days if int(day["count"]) > 0]
+        percentage_changes = [(counts[i] - counts[i - 1]) / counts[i - 1] for i in range(1, len(counts))]
+        buy = avg(percentage_changes)
+
+        counts = [int(day["returns"]) for day in days if int(day["returns"]) > 0]
+        percentage_changes = [(counts[i] - counts[i - 1]) / counts[i - 1] for i in range(1, len(counts))]
+        ret = -avg(percentage_changes)
+
+        coef = buy * 1.2 + ret * 0.7
+        if -0.25 < coef < 0.25:
+            ignored.append(product_id)
+            continue
+        percentages[product_id] = {"buy": buy, "return": ret, "coef": coef}
+
+    ignored_count += len(ignored)
+    for ig in ignored:
+        del products[ig]
 
     raw_result = {}
     for product_id in products:
-        deltas = sum([day["delta"] for day in products[product_id][:-1]])
-
+        coef = percentages[product_id]["coef"]
         price = products[product_id][0]["price"]
         res = {"price": price}
-        if deltas > products[product_id][-1]["delta"]:
-            raw_result[product_id] = res | {"action": "down", "recommended_price": round(price * 0.975, 2)}
+        new_price_coef = abs(min(coef - 0.25, 0.5) / 10)
+        if coef < 0:
+            raw_result[product_id] = res | {"action": "down", "recommended_price": round(price * (1 - new_price_coef), 2)}
         else:
-            raw_result[product_id] = res | {"action": "up", "recommended_price": round(price * 1.025, 2)}
+            raw_result[product_id] = res | {"action": "up", "recommended_price": round(price * (1 + new_price_coef), 2)}
 
     result = []
     for prod in await Product.filter(id__in=list(raw_result.keys())).all():
