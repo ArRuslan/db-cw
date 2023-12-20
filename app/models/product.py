@@ -16,7 +16,7 @@ class Product(Model):
     per_order_limit: int = fields.IntField(default=0)
     image_url: Optional[str] = fields.TextField(null=True)
     warranty_days: int = fields.IntField(default=0)
-    category: models.Category | None = fields.ForeignKeyField("models.Category", null=True, default=None)
+    category: models.Category | None = fields.ForeignKeyField("models.Category", null=True, default=None, on_delete=fields.SET_NULL)
     characteristics = fields.ManyToManyField("models.Characteristic", through="productcharacteristic")
 
     class PydanticMeta:
